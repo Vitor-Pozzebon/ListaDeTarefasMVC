@@ -1,32 +1,67 @@
+using ListaDeTarefas.Data;
 using ListaDeTarefas.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 
 namespace ListaDeTarefas.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        // usando os dados do banco para fazer seus usos
+        private readonly AppDbContext _context;
+        public HomeController(AppDbContext context)
         {
-            _logger = logger;
+            _context = context;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(string id)
         {
-            return View();
+            var filtros = new Filtros(id);
+
+            ViewBag.Filtros = filtros;
+            ViewBag.Categorias = _context.Categorias.ToList();
+            ViewBag.Status = _context.Statuses.ToList();
+            ViewBag.VencimentoValores = Filtros.VencimentoValoresFiltro;
+
+            //juntas as tabelas de Status e Categoria
+            IQueryable<Tarefa> consulta = _context.Tarefas
+                .Include(c => c.Categoria)
+                .Include(s => s.Status);
+
+            if (filtros.TemCategoria)
+            {
+                consulta = consulta.Where(t => t.CategoriaId == filtros.CategoriaId);
+            }
+
+            if (filtros.TemStatus)
+            {
+                consulta = consulta.Where(t => t.StatusId == filtros.StatusId);
+            }
+
+            if (filtros.TemVencimento)
+            {
+                var hoje = DateTime.Today;
+
+                if (filtros.EPassado)
+                {
+                    consulta = consulta.Where(t => t.DataDeVencimento < hoje);
+                }
+                
+                if (filtros.EFuturo)
+                {
+                    consulta = consulta.Where(t => t.DataDeVencimento > hoje);
+                }
+
+                if (filtros.EHoje)
+                {
+                    consulta = consulta.Where(t => t.DataDeVencimento == hoje);
+                }
+            }
+
+            var tarefas = consulta.OrderBy(t => t.DataDeVencimento).ToList();
+
+            return View(tarefas);
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
     }
 }
