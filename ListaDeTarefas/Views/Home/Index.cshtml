@@ -37,6 +37,44 @@
         </form>
     </div>
     <div class="col-md-9">
+        <form asp-action="MarcarCompleto" method="post" asp-route-id="@ViewBag.Filtros.FiltroString">
+            <table class="table table-striped table-bordered mt-2">
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Data de Vencimento</th>
+                        <th>Status</th>
+                        <th class="w-25"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (Tarefa tarefa in Model)
+                    {
+                        string atrasado = tarefa.Atrasado ? "bg-warning" : "";
 
+                        <tr>
+                            <td>@tarefa.Descricao</td>
+                            <td>@tarefa.Categoria.Nome</td>
+                            <td class="@atrasado">@tarefa.DataDeVencimento?.ToShortDateString()</td>
+                            <td class="@atrasado">@tarefa.Status.Nome</td>
+                            <td>
+                                @if(tarefa.StatusId == "aberto")
+                                {
+                                    <button type="submit" class="btn btn-primary btn-sm" 
+                                    name="@nameof(Tarefa.Id)" 
+                                    value="@tarefa.Id">Completar</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </form>
+
+        <form asp-action="DeletarCompletos" method="post" asp-route-id="@ViewBag.Filtros.FiltroString">
+            <a asp-action="Adicionar" asp-controller="Home" class="btn btn-success">Adicionar Tarefa</a>
+            <button type="submit" class="btn btn-danger">Deletar Tarefas Completas</button>
+        </form>
     </div>
 </div>
